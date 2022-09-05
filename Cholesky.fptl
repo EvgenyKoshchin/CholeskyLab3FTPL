@@ -1,0 +1,130 @@
+Scheme Cholesky
+{
+    N = [1].toInt;
+    data_path = [2].toString;
+
+    @ = (N * 1).less ->
+            "N must be greater then 0".print,
+                result.print;
+
+    matrix = (data_path * empty_matrix).openFile;
+    result = (matrix * N * kol * empty_matrix * (N * 1).sub * 0 * 0).SolveByCholesky;
+
+
+    /// Solve system of linear equations by Cholesky
+    
+    Fun SolveByCholesky
+    {
+         matrix = [1]; N = [2]; kol = [3]; b_array = [4]; m = [5]; i = [6]; j = [7];
+         @ = (i * N).less ->
+            (matrix * N * kol * b_array * m * i * j).CycleByColumns,
+            b_array;
+        diag_elem = (matrix * (m * m).BlankMatrix * 0 * 0 * N * i * j).ChooseFollowColumn;
+        additional_value = 
+            (
+                (
+                    GetFactor *
+                    (m * diag_elem * 0.0 * 1.0 * 0).CalculateDiagElements
+                ).mul *
+                kol
+            ).div;
+        CycleByColumns = (j * N).less ->
+            (
+                matrix *
+                N *
+                kol *
+                (b_array * j * ((b_array * j).arrayGet * i * additional_value).arraySet).arraySet *
+                m *
+                i *
+                (j * 1).add
+            ).CycleByColumns,
+            (matrix * N * kol * b_array * m * (i * 1).add * 0).SolveByCholesky;
+        GetFactor = ((((i * j).add * 2).add * 2).mod * 0).equal -> 1.0,-1.0;
+    }
+
+    /// Transpose matrix
+
+    Fun TransposeMatrix
+    {
+        old_matrix = [1]; new_matrix = [2]; N = [3]; i = [4];
+        @ = (i * N).less ->
+            (old_matrix * new_matrix * N * i * 0).InternalCycleTransponate,
+            new_matrix;
+        Fun InternalCycleTransponate
+        {
+            old_matrix = [1]; new_matrix = [2]; N = [3]; i = [4]; j = [5];
+            matrix_elem  = ((old_matrix * i).arrayGet * j).arrayGet;
+            new_matrix_ = (new_matrix * j * ((new_matrix * j).arrayGet * i * matrix_elem).arraySet).arraySet;
+            @ = (j * (N * 1).sub).less ->
+                (old_matrix * new_matrix_ * N * i * (j * 1).add).InternalCycleTransponate,
+                (old_matrix * new_matrix_ * N * (i * 1).add).TransposeMatrix;
+        }   
+    }
+
+    /// Calculate diagonal elements
+
+    Fun CalculateDiagElements
+    {
+        N = [1]; matrix = [2]; kol = [3]; degree = [4]; i = [5];
+        @ = (N * 1).equal -> // matrix[0][0]
+                ((matrix * 0).arrayGet * 0).arrayGet,
+                (N * 2).equal ->
+                    ( // matrix[0][0] * matrix[1][1] - matrix[1][0] * matrix[0][1];
+                        (((matrix * 0).arrayGet * 0).arrayGet * ((matrix * 1).arrayGet * 1).arrayGet).mul *
+                        (((matrix * 0).arrayGet * 1).arrayGet * ((matrix * 1).arrayGet * 0).arrayGet).mul
+                    ).sub,
+                    (N * matrix * 0.0 * 1.0 * 0).GetElementCycle;
+        m = (N * 1).sub;
+        diag_elem = (matrix * (m * m).BlankMatrix * 0 * 0 * N * i * 0).ChooseFollowColumn;
+        new_column =
+            (
+                kol *
+                (
+                    (degree * ((matrix * i).arrayGet * 0).arrayGet).mul 
+                        *
+                    (m * diag_elem * 0.0 * 1.0 * 0).CalculateDiagElements
+                ).mul
+            ).add;
+        GetElementCycle = (i * m).less -> 
+                (N * matrix * new_column * (degree * -1.0).mul * (i * 1).add).GetElementCycle,
+                new_column;
+    }
+
+    /// Helping functions
+
+    Fun BlankMatrix
+    {
+        @ = ([1] * (([1] * 0.0).arrayCreate)).arrayCreate;
+    }
+
+    /// Functions for calculating elements under main diagonal element
+
+    Fun ChooseFollowColumn
+    {
+        matrix = [1]; diag_elem = [2]; k_i = [3]; i = [4]; n = [5]; row_num = [6]; col_num = [7];
+        column_index_new = (i * row_num).equal -> 
+            diag_elem * k_i,
+            (matrix * diag_elem * k_i * 0 * i * n * col_num * 0).CalculateMainElem * (k_i * 1).add;
+        @ = (i * (n * 1).sub).equal ->
+            column_index_new.[1],
+            (matrix * column_index_new.[1] * column_index_new.[2] * (i * 1).add * n * row_num * col_num).ChooseFollowColumn;
+    }
+    Fun CalculateMainElem
+    {
+        matrix = [1]; diag_elem = [2]; k_i = [3]; k_j = [4]; i = [5]; n = [6]; col_num = [7]; j = [8];
+        calculated_column = (j * col_num).equal ->
+            diag_elem * k_j,
+            (matrix * diag_elem * k_i * k_j * i * j).SumOfAllSuitableElemts;
+        @ = (j * (n * 1).sub).equal ->
+            calculated_column.[1],
+            (matrix * calculated_column.[1] * k_i * calculated_column.[2] * i * n * col_num * (j * 1).add).CalculateMainElem;
+    }
+    Fun SumOfAllSuitableElemts
+    {
+        matrix = [1]; diag_elem = [2]; k_i = [3]; k_j = [4]; i = [5]; j = [6];
+        matrix_elem  = ((matrix * i).arrayGet * j).arrayGet;
+        @ = (diag_elem * k_i * ((diag_elem * k_i).arrayGet * k_j * matrix_elem).arraySet).arraySet * (k_j * 1).add;
+    }
+}
+Application
+%Cholesky(8, 5000)
